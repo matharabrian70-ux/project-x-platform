@@ -6,7 +6,9 @@ const {
   deliveryProgress,
   netProductRevenue,
   weeklyCompletion,
-  transition
+  transition,
+  stateField,
+  applyState
 } = require('../src/domain');
 
 test('weighted pipeline sums deal value multiplied by probability', () => {
@@ -32,4 +34,21 @@ test('weekly completion counts completed tasks over all tasks', () => {
 
 test('invalid delivery state transition is rejected', () => {
   assert.throws(() => transition('complete', 'in_progress', ['approved']), /Invalid transition/);
+});
+
+test('each product has exactly one canonical workflow state field', () => {
+  assert.equal(stateField('agency'), 'stage');
+  assert.equal(stateField('money'), 'kind');
+  assert.equal(stateField('delivery'), 'status');
+  assert.equal(stateField('seller'), 'channel');
+  assert.equal(stateField('business'), 'status');
+});
+
+test('workflow state updates write to the canonical field', () => {
+  assert.deepEqual(applyState('money', { name: 'Invoice', kind: 'income', amount: 100 }, 'expense'), {
+    name: 'Invoice', kind: 'expense', amount: 100
+  });
+  assert.deepEqual(applyState('seller', { name: 'OS', channel: 'Payhip', gross: 100 }, 'Gumroad'), {
+    name: 'OS', channel: 'Gumroad', gross: 100
+  });
 });
