@@ -1,3 +1,11 @@
+const STATE_FIELDS = Object.freeze({
+  agency: 'stage',
+  money: 'kind',
+  delivery: 'status',
+  seller: 'channel',
+  business: 'status'
+});
+
 function weightedPipeline(deals) {
   return deals.reduce((sum, deal) => sum + Number(deal.value || 0) * Number(deal.probability || 0), 0);
 }
@@ -35,11 +43,23 @@ function transition(current, next, allowed) {
   return next;
 }
 
+function stateField(product) {
+  const field = STATE_FIELDS[product];
+  if (!field) throw new Error(`Unknown product: ${product}`);
+  return field;
+}
+
+function applyState(product, record, next) {
+  return { ...record, [stateField(product)]: next };
+}
+
 module.exports = {
   weightedPipeline,
   profitAndMargin,
   deliveryProgress,
   netProductRevenue,
   weeklyCompletion,
-  transition
+  transition,
+  stateField,
+  applyState
 };
