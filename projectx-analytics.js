@@ -1,14 +1,12 @@
-const http = require('node:http');
-
-const originalEmit = http.Server.prototype.emit;
-let sentStart = false;
+const DEFAULT_HOST = 'https://us.i.posthog.com';
 
 async function capture(event, properties = {}) {
   const apiKey = process.env.POSTHOG_API_KEY;
-  if (!apiKey) return;
-  const host = (process.env.POSTHOG_HOST || 'https://us.i.posthog.com').replace(/\/$/, '');
+  if (!apiKey) return false;
+
+  const host = (process.env.POSTHOG_HOST || DEFAULT_HOST).replace(/\/$/, '');
   try {
-    await fetch(`${host}/capture/`, {
+    const response = await fetch(`${host}/capture/`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
@@ -18,22 +16,11 @@ async function capture(event, properties = {}) {
         properties: { ...properties, source: 'project-x-platform' }
       })
     });
+    return response.ok;
   } catch (_) {
     // Analytics must never take the application down.
+    return false;
   }
 }
 
-if (!sentStart) {
-  sentStart = true;
-  capture('project_x_service_started');
-}
-
-http.Server.prototype.emit = function (type, request, response) {
-  if (type === 'request' && request && request.url) {
-    const route = request.url.split('?')[0];
-    if (route === '/' || route === '/health' || route.startsWith('/api/')) {
-      capture('project_x_http_request', { method: request.method, route });
-    }
-  }
-  return originalEmit.apply(this, arguments);
-};
+module.exports = { capture };
