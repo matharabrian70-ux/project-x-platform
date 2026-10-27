@@ -61,3 +61,17 @@ test('invalid workflow state is rejected by the API', async () => {
   });
   assert.equal(response.status, 400);
 });
+
+test('market intelligence endpoints are mounted in the Project X app', async () => {
+  const response = await fetch(`${baseUrl}/api/market/status`);
+  assert.equal(response.status, 200);
+  const status = await response.json();
+  assert.deepEqual(status.providers.map(provider => provider.id), ['twelve-data', 'massive', 'oanda']);
+  assert.equal(status.analyst.provider, 'Groq');
+});
+
+test('market intelligence page is served by the existing app', async () => {
+  const response = await fetch(`${baseUrl}/market-intelligence`);
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /Market Intelligence/);
+});
